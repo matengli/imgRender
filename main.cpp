@@ -48,7 +48,7 @@ void drawLine(TGAImage &image, vec2i p1, vec2i p2) {
     drawLine(image, p1.x, p1.y, p2.x, p2.y);
 }
 
-vec2i getScreenVec(Model md, int faceIndex, int index) {
+vec2i getScreenVec(Model &md, int faceIndex, int index) {
     vec4f _p = md.getFaceVecs(faceIndex, index);
     vec2i p = vec2i((_p.x + 1.) * (WIDTH / 2.), (_p.y + 1.) * (HEIGHT / 2.));
     return p;
@@ -56,7 +56,7 @@ vec2i getScreenVec(Model md, int faceIndex, int index) {
 
 void drawMdFrame(TGAImage &image) {
     Model md;
-    md.readFromFile("Resource/african_head.obj");
+    md.readFromFile("Resource/diablo3_pose.obj");
     for (int i = 0; i < md.getFacesCount(); i++) {
         drawLine(image, getScreenVec(md, i, 0), getScreenVec(md, i, 1));
         drawLine(image, getScreenVec(md, i, 1), getScreenVec(md, i, 2));
