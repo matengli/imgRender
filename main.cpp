@@ -8,6 +8,8 @@ const TGAColor red = TGAColor(255, 0, 0, 255);
 
 const float PI = atan(1.0) * 4;
 
+#define REG(x) (x/180.*PI)
+
 const int WIDTH = 1000;
 const int HEIGHT = 1000;
 
@@ -73,11 +75,79 @@ void drawCircleLine(TGAImage &image) {
     }
 }
 
+vec4f getBaryCoord(vec2i* points, vec2i &endp){
+    vec2i a = points[0]-points[2];
+    vec2i b = points[1]-points[2];
+    vec2i c = endp-points[2];
+
+    float x = (c.x*b.y-c.y*b.x)/(float)(a.x*b.y-a.y*b.x);
+    float y = (c.x*a.y-c.y*a.x)/(float)(b.x*a.y-b.y*a.x);
+    vec4f result(x,y,1.0-x-y,0);
+    if ((result.x>=0.&&result.x<=1.)&&(result.y>=0.&&result.y<=1.)&&(result.z>=0.&&result.z<=1.)){
+        return result;
+    } else{
+        return vec4f(-1.,-1.,-1.,0);
+    }
+}
+
+void drawTriangle(TGAImage &image,vec2i* points,TGAColor color){
+    int xyMinMax[4] = {points[0].x,points[0].x,points[0].y,points[0].y};
+    for(int i=0;i<4;i++){
+        for(int j=0;j<3;j++){
+            int tval = i <= 1 ? points[j].x : points[j].y;
+            bool isUpdate = (i % 2 == 0) ? xyMinMax[i] > tval : xyMinMax[i] < tval;
+            xyMinMax[i] = isUpdate ? tval : xyMinMax[i];
+        }
+    }
+
+    for(int x=xyMinMax[0];x<xyMinMax[1];x+=1){
+        for(int y=xyMinMax[2];y<xyMinMax[3];y+=1) {
+            auto end = vec2i(x,y);
+            auto result = getBaryCoord(points, end);
+            if(result.x>=0.&&result.y>=0.&&result.z>=0.){
+                image.set(x,y,color);
+            }
+        }
+    }
+}
+
+void drawCircleTriangle(TGAImage &image) {
+    float length = 100;
+    float reg =  0.;
+    const int AMOUNT = 5;
+    for(int j=0;j<AMOUNT;j++) {
+        reg = 360./AMOUNT*(j+1);
+        vec2i points[3]={};
+        for (int i = 0; i < 3; i++) {
+            points[i] = vec2i(cos(REG(reg))*length,sin(REG(reg))*length)+vec2i(WIDTH/2,HEIGHT/2);
+            reg+=120;
+        }
+        drawTriangle(image,points,red);
+    }
+}
+
+
+void drawMdTriangle(TGAImage &image) {
+    Model md;
+    md.readFromFile("Resource/diablo3_pose.obj");
+    for (int i = md.getFacesCount()-1; i >=0 ; i--) {
+        vec4f normal = vec4f((md.getFaceVecs(i, 1)-md.getFaceVecs(i, 2))^(md.getFaceVecs(i, 0)-md.getFaceVecs(i, 2))).gerNor();
+        float instensty = vec4f(0,0,1.,0)*normal;
+        vec2i points[3] = {getScreenVec(md, i, 0),getScreenVec(md, i, 1),getScreenVec(md, i, 2)};
+        if(instensty>0.) {
+            drawTriangle(image, points, TGAColor(255 * instensty, 255 * instensty, 255 * instensty, 255));
+        }
+    }
+}
+
 int main(int argc, char **argv) {
 
     TGAImage image(WIDTH, HEIGHT, TGAImage::RGB);
 
-    drawMdFrame(image);
+    drawMdTriangle(image);
+//    drawCircleTriangle(image);
+//    vec2i points[3] = {vec2i(500,500),vec2i(400,400),vec2i(600,200)};
+//    drawTriangle(image,points,red);
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
     image.write_tga_file("output/output.tga");
     std::system("open output/output.tga");
