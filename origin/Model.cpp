@@ -44,22 +44,3 @@ Model::Model(const char *fileName) {
 
 }
 
-bool Model::handleOutputData(std::vector<std::string> strVec) {
-//    if (strVec[0] == "v") {
-//        this->points.push_back(vec4f(str2float(strVec[1]), str2float(strVec[2]), str2float(strVec[3]), 0.));
-//    } else if (strVec[0] == "f") {
-//
-//        std::vector<int> val;
-//
-//        for (int i = 0; i < 3; i++) {
-//            std::istringstream iss(strVec[i+1]);
-//            int ival, itrash;
-//            char ctrash;
-//            while (iss>>ival>>ctrash>>itrash>>ctrash>>itrash) {
-//                val.push_back(ival-1);
-//            }
-//        }
-//        this->faces.push_back(val);
-//    }
-//    return false;
-}
