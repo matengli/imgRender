@@ -8,10 +8,19 @@ const TGAColor red = TGAColor(255, 0, 0, 255);
 
 const float PI = atan(1.0) * 4;
 
-#define REG(x) (x/180.*PI)
+const int WIDTH = 800;
+const int HEIGHT = 800;
 
-const int WIDTH = 1000;
-const int HEIGHT = 1000;
+#define REG(x) (x/180.*PI)
+#define SCREENVEC2(_p) (vec2i((_p.x + 1.) * (WIDTH / 2.), (_p.y + 1.) * (HEIGHT / 2.)))
+
+float zBuffer[WIDTH*HEIGHT];
+
+void initZBuffer(){
+    for(int i=0;i<WIDTH*HEIGHT;i++){
+        zBuffer[i]=-std::numeric_limits<float>::max();
+    }
+}
 
 void drawLine(TGAImage &image, int x1, int y1, int x2, int y2) {
     bool isSteep = false;
@@ -52,7 +61,7 @@ void drawLine(TGAImage &image, vec2i p1, vec2i p2) {
 
 vec2i getScreenVec(Model &md, int faceIndex, int index) {
     vec4f _p = md.getFaceVecs(faceIndex, index);
-    vec2i p = vec2i((_p.x + 1.) * (WIDTH / 2.), (_p.y + 1.) * (HEIGHT / 2.));
+    vec2i p = SCREENVEC2(_p);
     return p;
 }
 
@@ -132,7 +141,7 @@ void drawMdTriangle(TGAImage &image) {
     md.readFromFile("Resource/diablo3_pose.obj");
     for (int i = md.getFacesCount()-1; i >=0 ; i--) {
         vec4f normal = vec4f((md.getFaceVecs(i, 1)-md.getFaceVecs(i, 2))^(md.getFaceVecs(i, 0)-md.getFaceVecs(i, 2))).gerNor();
-        float instensty = vec4f(0,0,1.,0)*normal;
+        float instensty = vec4f(0,0,2.,0)*normal;
         vec2i points[3] = {getScreenVec(md, i, 0),getScreenVec(md, i, 1),getScreenVec(md, i, 2)};
         if(instensty>0.) {
             drawTriangle(image, points, TGAColor(255 * instensty, 255 * instensty, 255 * instensty, 255));
@@ -140,11 +149,79 @@ void drawMdTriangle(TGAImage &image) {
     }
 }
 
+void drawTriangle(TGAImage &image,vec4f* oriPoints,TGAColor color){
+    vec2i points[3] = {SCREENVEC2(oriPoints[0]),SCREENVEC2(oriPoints[1]),SCREENVEC2(oriPoints[2])};
+    int xyMinMax[4] = {points[0].x,points[0].x,points[0].y,points[0].y};
+    for(int i=0;i<4;i++){
+        for(int j=0;j<3;j++){
+            int tval = i <= 1 ? points[j].x : points[j].y;
+            bool isUpdate = (i % 2 == 0) ? xyMinMax[i] > tval : xyMinMax[i] < tval;
+            xyMinMax[i] = isUpdate ? tval : xyMinMax[i];
+        }
+    }
+
+    for(int x=xyMinMax[0];x<xyMinMax[1];x+=1){
+        for(int y=xyMinMax[2];y<xyMinMax[3];y+=1) {
+            auto end = vec2i(x,y);
+            auto result = getBaryCoord(points, end);
+            if(result.x>=0.&&result.y>=0.&&result.z>=0.){
+                float zbuf = zBuffer[y*WIDTH+x];
+                float z = result*vec4f(oriPoints[0].z,oriPoints[1].z,oriPoints[2].z,0.);
+                if(z>zbuf){
+                    zBuffer[y*WIDTH+x] = z;
+                    image.set(x,y,color);
+                }
+            }
+        }
+    }
+}
+
+void drawMdTriWithZ(TGAImage& image){
+    Model md;
+    md.readFromFile("Resource/african_head.obj");
+    for (int i = 0; i <md.getFacesCount() ; i++) {
+        vec4f points[3] = {md.getFaceVecs(i,0),md.getFaceVecs(i,1),md.getFaceVecs(i,2)};
+        vec4f normal = ((points[0]-points[1])^(points[0]-points[2]));
+        normal = normal.gerNor();
+        float instensty = vec4f(0,0,2.,0)*normal;
+        if(instensty>0.){
+//            instensty = instensty>=0.5f?instensty:0.5f;
+            drawTriangle(image, points, TGAColor(255 * instensty, 255 * instensty, 255 * instensty, 255));
+        }
+    }
+}
+
+void drawZbufferImg(TGAImage& image){
+    float min = std::numeric_limits<float>::max();
+    float max = -std::numeric_limits<float>::max();
+
+    for(int i=0;i<WIDTH*HEIGHT;i++){
+        float factor = zBuffer[i];
+        if(factor==-std::numeric_limits<float>::max()){
+            continue;
+        }
+        min = min>factor?factor:min;
+        max = max<factor?factor:max;
+    }
+
+    for(int x=0;x<WIDTH;x++){
+        for(int y=0;y<HEIGHT;y++){
+            float factor = zBuffer[x+y*WIDTH];
+            if(factor>-std::numeric_limits<float>::max()){
+//                factor*=255.;
+                factor = (factor-min)/(max-min)*255.;
+                image.set(x,y,TGAColor(factor,factor,factor,255));
+            }
+        }
+    }
+}
 int main(int argc, char **argv) {
 
     TGAImage image(WIDTH, HEIGHT, TGAImage::RGB);
-
-    drawMdTriangle(image);
+    initZBuffer();
+    drawMdTriWithZ(image);
+//    drawZbufferImg(image);
+//    drawMdTriangle(image);
 //    drawCircleTriangle(image);
 //    vec2i points[3] = {vec2i(500,500),vec2i(400,400),vec2i(600,200)};
 //    drawTriangle(image,points,red);
