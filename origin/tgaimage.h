@@ -58,6 +58,8 @@ struct TGAColor {
         }
         return *this;
     }
+
+    inline TGAColor operator *(float v) { return TGAColor(r*v,g*v,b*v,a*v);}
 };
 
 
