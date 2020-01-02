@@ -21,12 +21,13 @@ struct vec4f {
     }
 
     inline float getLength(){return sqrt(x*x+y*y+z*z);}
-    inline vec4f gerNor(){float l = getLength();return vec4f(x/l,y/l,z/l,w);}
+    inline vec4f getNor(){float l = getLength();return vec4f(x / l, y / l, z / l, w);}
     inline vec4f operator +(const vec4f &v) { return vec4f(x+v.x,y+v.y,z+v.z,w+v.w);}
     inline vec4f operator -(const vec4f &v) { return vec4f(x-v.x,y-v.y,z-v.z,w-v.w);}
     inline float operator *(const vec4f &v) { return x*v.x+y*v.y+z*v.z+w*v.w;}
     inline vec4f operator *(float v) { return vec4f(x*v,y*v,z*v,w*v);}
     inline vec4f operator ^(const vec4f &v) { return vec4f(y*v.z-z*v.y,z*v.x-x*v.z,x*v.y-y*v.x,0.);}
+    inline float operator [](unsigned int i) { return (i==0)?x:(i==1)?y:(i==2)?z:(i==3)?w:1.0;}
 
 };
 
@@ -49,6 +50,31 @@ struct vec2i {
 
     inline vec2i operator +(const vec2i &v) { return vec2i(x+v.x,y+v.y);}
 
+};
+
+
+const int DEFAULT_ALLOC=4;
+
+class Matrix {
+    std::vector<std::vector<float> > m;
+    int rows, cols;
+public:
+    Matrix(int r=DEFAULT_ALLOC, int c=DEFAULT_ALLOC);
+    Matrix(vec4f vals);
+
+    inline int nrows();
+    inline int ncols();
+
+    static Matrix identity(int dimensions);
+    std::vector<float>& operator[](const int i);
+    Matrix operator*(const Matrix& a);
+    Matrix transpose();
+    Matrix inverse();
+
+    vec4f getVec4f();
+
+    static Matrix lookAt(vec4f center,vec4f eye,vec4f up);
+    friend std::ostream& operator<<(std::ostream& s, Matrix& m);
 };
 
 #endif //IMGRENDER_GEOMOTRY_H

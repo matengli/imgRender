@@ -12,6 +12,7 @@
 #include <vector>
 #include "Geomotry.h"
 #include "tgaimage.h"
+//#include "GlobalFunctions.h"
 
 class Model {
 public:
@@ -64,7 +65,7 @@ public:
         int x = (int)(uv.x*width);
         int y = (int)(uv.y*height);
         TGAColor c = normalTexture.get(x,y);
-        return  vec4f(c.r/255.*2.-1.,c.g/255.*2.-1.,c.b/255.*2.-1.,0.).gerNor();
+        return vec4f(c.r / 255. * 2. - 1., c.g / 255. * 2. - 1., c.b / 255. * 2. - 1., 0.).getNor();
     }
 
     bool readDiffTextureFromFile(const char *fileName){

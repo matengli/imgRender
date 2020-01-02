@@ -5,6 +5,7 @@
 #define __IMAGE_H__
 
 #include <fstream>
+#include "GlobalFunctions.h"
 
 #pragma pack(push, 1)
 struct TGA_Header {
@@ -59,7 +60,7 @@ struct TGAColor {
         return *this;
     }
 
-    inline TGAColor operator *(float v) { return TGAColor(r*v,g*v,b*v,a*v);}
+    inline TGAColor operator *(float v) { return TGAColor(limit(r*v,0,255.),limit(g*v,0,255.),limit(b*v,0,255.),a);}
 };
 
 

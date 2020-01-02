@@ -8,7 +8,17 @@ const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
 
-const vec4f LIGHTDIR = vec4f(0,0.,1.0,0);
+const vec4f LIGHTDIR = vec4f(0,1,1,0).getNor();
+const float LIGHT_INST = 2.0;
+
+//DEFAULT
+const vec4f CENTER = vec4f(0,0,0,0);
+const vec4f EYE = vec4f(0,0.,1.0,0);
+const vec4f UP = vec4f(0.,1.,0,0);
+
+//CENTER = vec4f(0,0,0,0);
+//EYE = vec4f(0.,0.,1.0,0);
+//UP = vec4f(0.,1.,0,0);
 
 const float PI = atan(1.0) * 4;
 
@@ -103,6 +113,21 @@ vec4f getBaryCoord(vec2i* points, vec2i &endp){
     }
 }
 
+vec4f getBaryCoord(vec4f* points, vec4f &endp){
+    vec4f a = points[0]-points[2];
+    vec4f b = points[1]-points[2];
+    vec4f c = endp-points[2];
+
+    float x = (c.x*b.y-c.y*b.x)/(float)(a.x*b.y-a.y*b.x);
+    float y = (c.x*a.y-c.y*a.x)/(float)(b.x*a.y-b.y*a.x);
+    vec4f result(x,y,1.0-x-y,0);
+    if ((result.x>=0.&&result.x<=1.)&&(result.y>=0.&&result.y<=1.)&&(result.z>=0.&&result.z<=1.)){
+        return result;
+    } else{
+        return vec4f(-1.,-1.,-1.,0);
+    }
+}
+
 void drawTriangle(TGAImage &image,vec2i* points,TGAColor color){
     int xyMinMax[4] = {points[0].x,points[0].x,points[0].y,points[0].y};
     for(int i=0;i<4;i++){
@@ -144,7 +169,8 @@ void drawMdTriangle(TGAImage &image) {
     Model md;
     md.readFromFile("Resource/diablo3_pose.obj");
     for (int i = md.getFacesCount()-1; i >=0 ; i--) {
-        vec4f normal = vec4f((md.getFaceVecs(i, 1)-md.getFaceVecs(i, 2))^(md.getFaceVecs(i, 0)-md.getFaceVecs(i, 2))).gerNor();
+        vec4f normal = vec4f(
+                (md.getFaceVecs(i, 1) - md.getFaceVecs(i, 2)) ^ (md.getFaceVecs(i, 0) - md.getFaceVecs(i, 2))).getNor();
         float instensty = vec4f(0,0,2.,0)*normal;
         vec2i points[3] = {getScreenVec(md, i, 0),getScreenVec(md, i, 1),getScreenVec(md, i, 2)};
         if(instensty>0.) {
@@ -255,7 +281,7 @@ void drawMdTriWithZ(TGAImage& image){
         vec4f uvs[3] = {md.getUvVecs(i,0),md.getUvVecs(i,1),md.getUvVecs(i,2)};
 
         vec4f normal = ((points[0]-points[1])^(points[0]-points[2]));
-        normal = normal.gerNor();
+        normal = normal.getNor();
         float instensty = vec4f(0,0,1.0,0)*normal;
 //        instensty =1.0;
         if(instensty>0.1){
@@ -278,6 +304,12 @@ void drawTriangle(TGAImage &image,vec4f* oriPoints,vec4f* uvs,Model &md,vec4f* n
 
     float ins = 1.;
 
+    xyMinMax[0] = xyMinMax[0]<0?0:xyMinMax[0];
+    xyMinMax[2] = xyMinMax[2]<0?0:xyMinMax[2];
+
+    xyMinMax[1] = xyMinMax[1]>=WIDTH?WIDTH-1:xyMinMax[1];
+    xyMinMax[3] = xyMinMax[3]>=HEIGHT?HEIGHT-1:xyMinMax[3];
+
     for(int x=xyMinMax[0];x<xyMinMax[1];x+=1){
         for(int y=xyMinMax[2];y<xyMinMax[3];y+=1) {
             auto end = vec2i(x,y);
@@ -289,7 +321,7 @@ void drawTriangle(TGAImage &image,vec4f* oriPoints,vec4f* uvs,Model &md,vec4f* n
 
 //                vec4f normal = normals[0]*result.x+normals[1]*result.y+normals[2]*result.z;
                 vec4f normal =  md.getNorFromMapByUv(uv);
-                ins = normal*LIGHTDIR;
+                ins = normal*LIGHTDIR*LIGHT_INST;
 
                 if(ins<0.2){
                     ins = 0.2;
@@ -313,8 +345,16 @@ void drawMdTriWithG(TGAImage& image){
     md.readDiffTextureFromFile("Resource/diablo3_pose_diffuse.tga");
     md.readNormalFromFile("Resource/diablo3_pose_nm.tga");
 
+    Matrix mv = Matrix::lookAt(CENTER,EYE,UP);
+//    Matrix mv = Matrix::identity(4);
+    Matrix proj = Matrix::identity(4);
+    proj[3][2] = -0.5;
+    Matrix transform = proj*mv;
     for (int i = 0; i <md.getFacesCount() ; i++) {
         vec4f points[3] = {md.getFaceVecs(i,0),md.getFaceVecs(i,1),md.getFaceVecs(i,2)};
+        for(int j=0;j<3;j++){
+            points[j] = (transform*Matrix(points[j])).getVec4f();
+        }
         TGAColor colors[3] = {md.getDiffuseColor(i,0),md.getDiffuseColor(i,1),md.getDiffuseColor(i,2)};
         vec4f uvs[3] = {md.getUvVecs(i,0),md.getUvVecs(i,1),md.getUvVecs(i,2)};
 
@@ -355,10 +395,12 @@ void drawZbufferImg(TGAImage& image){
 
 int main(int argc, char **argv) {
 
-    TGAImage image(WIDTH, HEIGHT, TGAImage::RGB);
+    TGAImage image(WIDTH, HEIGHT, TGAImage::RGBA);
     initZBuffer();
 //    drawMdTriWithZ(image);
+
     drawMdTriWithG(image);
+//    image.set(558,819,TGAColor(0,0,0,0));
 //    drawZbufferImg(image);
 //    drawMdTriangle(image);
 //    drawCircleTriangle(image);
@@ -372,7 +414,7 @@ int main(int argc, char **argv) {
 //    }
 
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
-    image.write_tga_file("output/output2.tga");
-    std::system("open output/output2.tga");
+    image.write_tga_file("output/output3.tga");
+    std::system("open output/output3.tga");
     return 0;
 }

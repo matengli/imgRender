@@ -7,33 +7,28 @@
 
 #include <vector>
 #include <string>
+#include <sstream>
 
-std::vector<std::string> splice(const std::string &str, const std::string &splitStr) {
-    std::vector<std::string> result;
-    int lastIndex = 0;
-    while (1) {
-        int findIndex = str.find(splitStr, lastIndex);
-        if (findIndex == -1) {
-            result.push_back(str.substr(lastIndex, str.size() - lastIndex));
-            break;
-        } else {
-            result.push_back(str.substr(lastIndex, findIndex - lastIndex));
-            lastIndex = findIndex + splitStr.size();
-        }
-    }
+//std::vector<std::string> splice(const std::string &str, const std::string &splitStr) {
+//    std::vector<std::string> result;
+//    int lastIndex = 0;
+//    while (1) {
+//        int findIndex = str.find(splitStr, lastIndex);
+//        if (findIndex == -1) {
+//            result.push_back(str.substr(lastIndex, str.size() - lastIndex));
+//            break;
+//        } else {
+//            result.push_back(str.substr(lastIndex, findIndex - lastIndex));
+//            lastIndex = findIndex + splitStr.size();
+//        }
+//    }
+//
+//    return result;
+//}
 
-    return result;
-}
-
-inline float str2float(std::string str) {
-    float val = 0.;
-    std::stringstream(str) >> val;
-    return val;
-}
-
-inline float str2int(std::string str) {
-    int val = 0.;
-    std::stringstream(str) >> val;
+inline float limit(float val,float min, float max){
+    if(val>max)return max;
+    if(val<min)return min;
     return val;
 }
 

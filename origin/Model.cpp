@@ -3,7 +3,6 @@
 //
 
 #include "Model.h"
-#include "GlobalFunctions.h"
 
 bool Model::readFromFile(const char *fileName) {
     std::string line;
@@ -21,7 +20,7 @@ bool Model::readFromFile(const char *fileName) {
         if(!line.compare(0,2,"v ")){
             float x,y,z;
             str>>trash>>x>>y>>z;
-            verts.push_back(vec4f(x, y, z, 0.));
+            verts.push_back(vec4f(x, y, z, 1.));
         } else if (!line.compare(0,2,"f ")){
             str>>trash;
 
@@ -42,9 +41,11 @@ bool Model::readFromFile(const char *fileName) {
         } else if (!line.compare(0,3,"vn ")){
             float x,y,z;
             str>>trash>>trash>>x>>y>>z;
-            normals.push_back(vec4f(x, y, z, 0.).gerNor());
+            normals.push_back(vec4f(x, y, z, 0.).getNor());
         }
     }
+
+    return true;
 }
 
 Model::Model() {
