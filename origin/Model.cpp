@@ -39,6 +39,10 @@ bool Model::readFromFile(const char *fileName) {
             float x,y,z;
             str>>trash>>trash>>x>>y>>z;
             uvverts.push_back(vec4f(x, y, z, 0.));
+        } else if (!line.compare(0,3,"vn ")){
+            float x,y,z;
+            str>>trash>>trash>>x>>y>>z;
+            normals.push_back(vec4f(x, y, z, 0.).gerNor());
         }
     }
 }

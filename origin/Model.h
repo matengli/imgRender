@@ -29,6 +29,10 @@ public:
         return uvverts[uvs[uvIndex][index]];
     }
 
+    inline vec4f getFaceNors(int uvIndex, int index) {
+        return normals[faces[uvIndex][index]];
+    }
+
     inline int getFacesCount() {
         return faces.size();
     }
@@ -54,18 +58,34 @@ public:
         return diffuseTexture.get(x,y);
     }
 
+    inline vec4f getNorFromMapByUv(vec4f uv){
+        int width = normalTexture.get_width();
+        int height = normalTexture.get_height();
+        int x = (int)(uv.x*width);
+        int y = (int)(uv.y*height);
+        TGAColor c = normalTexture.get(x,y);
+        return  vec4f(c.r/255.*2.-1.,c.g/255.*2.-1.,c.b/255.*2.-1.,0.).gerNor();
+    }
+
     bool readDiffTextureFromFile(const char *fileName){
         diffuseTexture.read_tga_file(fileName);
         diffuseTexture.flip_vertically();
         return true;
     }
 
+    bool readNormalFromFile(const char * fileName,bool isTan = false){
+        normalTexture.read_tga_file(fileName);
+        normalTexture.flip_vertically();
+        return true;
+    }
+
 private:
     TGAImage diffuseTexture;
-    std::vector<vec4f> verts;
-    std::vector<vec4f> uvverts;
+    TGAImage normalTexture;
 
-    bool handleOutputData(std::vector<std::string>);
+    std::vector<vec4f> verts;
+    std::vector<vec4f> normals;
+    std::vector<vec4f> uvverts;
 
     std::vector<std::vector<int>> faces;
     std::vector<std::vector<int>> uvs;

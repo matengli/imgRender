@@ -8,7 +8,7 @@ const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
 
-
+const vec4f LIGHTDIR = vec4f(0,0.,1.0,0);
 
 const float PI = atan(1.0) * 4;
 
@@ -248,6 +248,7 @@ void drawMdTriWithZ(TGAImage& image){
     Model md;
     md.readFromFile("Resource/diablo3_pose.obj");
     md.readDiffTextureFromFile("Resource/diablo3_pose_diffuse.tga");
+
     for (int i = 0; i <md.getFacesCount() ; i++) {
         vec4f points[3] = {md.getFaceVecs(i,0),md.getFaceVecs(i,1),md.getFaceVecs(i,2)};
         TGAColor colors[3] = {md.getDiffuseColor(i,0),md.getDiffuseColor(i,1),md.getDiffuseColor(i,2)};
@@ -260,6 +261,70 @@ void drawMdTriWithZ(TGAImage& image){
         if(instensty>0.1){
             drawTriangle(image, points, uvs,md,instensty);
         }
+    }
+}
+
+//Gouraund shader
+void drawTriangle(TGAImage &image,vec4f* oriPoints,vec4f* uvs,Model &md,vec4f* normals){
+    vec2i points[3] = {SCREENVEC2(oriPoints[0]),SCREENVEC2(oriPoints[1]),SCREENVEC2(oriPoints[2])};
+    int xyMinMax[4] = {points[0].x,points[0].x,points[0].y,points[0].y};
+    for(int i=0;i<4;i++){
+        for(int j=0;j<3;j++){
+            int tval = i <= 1 ? points[j].x : points[j].y;
+            bool isUpdate = (i % 2 == 0) ? xyMinMax[i] > tval : xyMinMax[i] < tval;
+            xyMinMax[i] = isUpdate ? tval : xyMinMax[i];
+        }
+    }
+
+    float ins = 1.;
+
+    for(int x=xyMinMax[0];x<xyMinMax[1];x+=1){
+        for(int y=xyMinMax[2];y<xyMinMax[3];y+=1) {
+            auto end = vec2i(x,y);
+            auto result = getBaryCoord(points, end);
+            if(result.x>=0.&&result.y>=0.&&result.z>=0.){
+                float zbuf = zBuffer[y*WIDTH+x];
+                float z = result*vec4f(oriPoints[0].z,oriPoints[1].z,oriPoints[2].z,0.);
+                vec4f uv = uvs[0]*result.x+uvs[1]*result.y+uvs[2]*result.z;
+
+//                vec4f normal = normals[0]*result.x+normals[1]*result.y+normals[2]*result.z;
+                vec4f normal =  md.getNorFromMapByUv(uv);
+                ins = normal*LIGHTDIR;
+
+                if(ins<0.2){
+                    ins = 0.2;
+                }
+
+                TGAColor c = md.getDiffuseColorByUv(uv)*ins;
+
+                if(z>zbuf&&ins>0.){
+                    zBuffer[y*WIDTH+x] = z;
+                    image.set(x,y,c);
+                }
+            }
+        }
+    }
+}
+
+//Gouraund shader
+void drawMdTriWithG(TGAImage& image){
+    Model md;
+    md.readFromFile("Resource/diablo3_pose.obj");
+    md.readDiffTextureFromFile("Resource/diablo3_pose_diffuse.tga");
+    md.readNormalFromFile("Resource/diablo3_pose_nm.tga");
+
+    for (int i = 0; i <md.getFacesCount() ; i++) {
+        vec4f points[3] = {md.getFaceVecs(i,0),md.getFaceVecs(i,1),md.getFaceVecs(i,2)};
+        TGAColor colors[3] = {md.getDiffuseColor(i,0),md.getDiffuseColor(i,1),md.getDiffuseColor(i,2)};
+        vec4f uvs[3] = {md.getUvVecs(i,0),md.getUvVecs(i,1),md.getUvVecs(i,2)};
+
+//        normal from .obj
+//        vec4f normals[3] = {md.getFaceNors(i,0),md.getFaceNors(i,1),md.getFaceNors(i,2)};
+
+//        normal form normal texture
+        vec4f normals[3] = {md.getFaceNors(i,0),md.getFaceNors(i,1),md.getFaceNors(i,2)};
+
+        drawTriangle(image, points, uvs,md,normals);
     }
 }
 
@@ -292,7 +357,8 @@ int main(int argc, char **argv) {
 
     TGAImage image(WIDTH, HEIGHT, TGAImage::RGB);
     initZBuffer();
-    drawMdTriWithZ(image);
+//    drawMdTriWithZ(image);
+    drawMdTriWithG(image);
 //    drawZbufferImg(image);
 //    drawMdTriangle(image);
 //    drawCircleTriangle(image);
@@ -306,7 +372,7 @@ int main(int argc, char **argv) {
 //    }
 
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
-    image.write_tga_file("output/output.tga");
-    std::system("open output/output.tga");
+    image.write_tga_file("output/output2.tga");
+    std::system("open output/output2.tga");
     return 0;
 }
