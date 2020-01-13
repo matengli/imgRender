@@ -304,11 +304,11 @@ void drawTriangle(TGAImage &image,vec4f* oriPoints,vec4f* uvs,Model &md,vec4f* n
 
     float ins = 1.;
 
-    xyMinMax[0] = xyMinMax[0]<0?0:xyMinMax[0];
-    xyMinMax[2] = xyMinMax[2]<0?0:xyMinMax[2];
-
-    xyMinMax[1] = xyMinMax[1]>=WIDTH?WIDTH-1:xyMinMax[1];
-    xyMinMax[3] = xyMinMax[3]>=HEIGHT?HEIGHT-1:xyMinMax[3];
+    for(int i=0;i<4;i++){
+        if(xyMinMax[i]<0||xyMinMax[i]>=WIDTH){
+            return;
+        }
+    }
 
     for(int x=xyMinMax[0];x<xyMinMax[1];x+=1){
         for(int y=xyMinMax[2];y<xyMinMax[3];y+=1) {
