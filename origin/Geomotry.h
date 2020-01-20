@@ -1,17 +1,21 @@
 //
 // Created by someone on 2019/12/29.
 //
-# include <vector>
-# include <math.h>
-
 #ifndef IMGRENDER_GEOMOTRY_H
 #define IMGRENDER_GEOMOTRY_H
+
+# include <vector>
+# include <math.h>
 
 struct vec4f {
     float x;
     float y;
     float z;
     float w;
+
+    vec4f() : x(0.), y(0.), z(0.), w(0.) {
+
+    }
 
     vec4f(float x, float y, float z, float w) : x(0.), y(0.), z(0.), w(0.) {
         this->x = x;
